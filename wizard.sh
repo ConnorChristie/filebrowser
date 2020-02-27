@@ -33,6 +33,9 @@ buildAssets () {
   npm run build
 }
 
+OSES=('darwin' 'linux')
+ARCHES=('amd64' 'arm' 'arm64')
+
 buildBinary () {
   if ! [ -x "$(command -v rice)" ]; then
     go install github.com/GeertJohan/go.rice/rice
@@ -43,7 +46,20 @@ buildBinary () {
   rice embed-go
 
   cd $REPO
-  go build -a -o filebrowser -ldflags "-s -w -X github.com/filebrowser/filebrowser/v2/version.CommitSHA=$COMMIT_SHA"
+  
+  for os in "${OSES[@]}"; do
+    for arch in "${ARCHES[@]}"; do
+      GOOS=$os
+      GOARCH=$arch
+
+      go build -a -o out/filebrowser-$GOOS-$GOARCH -ldflags "-s -w -X github.com/ConnorChristie/filebrowser/v2/version.CommitSHA=$COMMIT_SHA"
+    done
+  done
+
+  GOOS=windows
+  GOARCH=amd64
+
+  go build -a -o out/filebrowser-$GOOS-$GOARCH -ldflags "-s -w -X github.com/ConnorChristie/filebrowser/v2/version.CommitSHA=$COMMIT_SHA"
 }
 
 release () {
