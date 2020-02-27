@@ -1,26 +1,79 @@
-# Golang CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
-  build:
+  lint:
     docker:
-      # specify the version
-      - image: circleci/golang:1.9
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
-    #### TEMPLATE_NOTE: go expects specific checkout path representing url
-    #### expecting it in the form of
-    ####   /go/src/github.com/circleci/go-tool
-    ####   /go/src/bitbucket.org/circleci/go-tool
-    working_directory: /go/src/github.com/{{ORG_NAME}}/{{REPO_NAME}}
+      - image: golangci/golangci-lint:v1.16
     steps:
       - checkout
-
-      # specify any bash command here prefixed with `run: `
-      - run: go get -v -t -d ./...
-      - run: go test -v ./...
+      - run: golangci-lint run -v -D errcheck
+  build-node:
+    docker:
+      - image: circleci/node
+    steps:
+      - checkout
+      - run:
+          name: "Build"
+          command: ./wizard.sh -a
+      - run:
+          name: "Cleanup"
+          command: rm -rf frontend/node_modules
+      - persist_to_workspace:
+          root: .
+          paths:
+            - '*'
+  build-go:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - attach_workspace:
+          at: '~/project'
+      - run:
+          name: "Compile"
+          command: GOOS=linux GOARCH=amd64 ./wizard.sh -c
+      - run:
+          name: "Cleanup"
+          command: |
+            rm -rf frontend/build
+            git checkout -- go.sum # TODO: why is it being changed?
+      - persist_to_workspace:
+          root: .
+          paths:
+            - '*'
+  release:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - attach_workspace:
+          at: '~/project'
+      - setup_remote_docker
+      - run: docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+      - run: curl -sL https://git.io/goreleaser | bash
+      - run: docker logout
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - lint:
+          filters:
+            tags:
+              only: /.*/
+      - build-node:
+          filters:
+            tags:
+              only: /.*/
+      - build-go:
+          filters:
+            tags:
+              only: /.*/
+          requires:
+            - build-node
+            - lint
+      - release:
+          context: deploy
+          requires:
+            - build-go
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
