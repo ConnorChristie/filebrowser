@@ -95,6 +95,9 @@ release () {
   git push
   git push --tags origin
 
+  go get github.com/tcnksm/ghr
+  ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME -c $CIRCLE_SHA1 -delete $VERSION ./out/
+
   echo "📦 Done! $semver released."
 }
 
