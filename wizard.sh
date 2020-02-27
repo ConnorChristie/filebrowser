@@ -59,7 +59,7 @@ buildBinary () {
   GOOS=windows
   GOARCH=amd64
 
-  go build -a -o out/filebrowser-$GOOS-$GOARCH -ldflags "-s -w -X github.com/ConnorChristie/filebrowser/v2/version.CommitSHA=$COMMIT_SHA"
+  go build -a -o out/filebrowser-$GOOS-$GOARCH.exe -ldflags "-s -w -X github.com/ConnorChristie/filebrowser/v2/version.CommitSHA=$COMMIT_SHA"
 }
 
 release () {
