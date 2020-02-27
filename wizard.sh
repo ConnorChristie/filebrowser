@@ -33,9 +33,6 @@ buildAssets () {
   npm run build
 }
 
-OSES=('darwin' 'linux')
-ARCHES=('amd64' 'arm' 'arm64')
-
 buildBinary () {
   if ! [ -x "$(command -v rice)" ]; then
     go install github.com/GeertJohan/go.rice/rice
@@ -46,9 +43,14 @@ buildBinary () {
   rice embed-go
 
   cd $REPO
-  
-  for os in "${OSES[@]}"; do
-    for arch in "${ARCHES[@]}"; do
+
+  declare -a OSES=("darwin" "linux")
+  declare -a ARCHES=("amd64" "arm" "arm64")
+
+  for os in "${OSES[@]}"
+  do
+    for arch in "${ARCHES[@]}"
+    do
       GOOS=$os
       GOARCH=$arch
 
