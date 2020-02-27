@@ -9,6 +9,7 @@ filebrowser
 .DS_Store
 node_modules
 /frontend/dist
+out/
 
 # local env files
 .env.local
